@@ -24,6 +24,13 @@ def start_message(message):
     bot.send_message(message.chat.id, text_message, reply_markup=keyboard)
 
 
+def generator_matches(list_matches):
+    yield from list_matches
+
+
+next_match = generator_matches(list_matches)
+
+
 @bot.message_handler(content_types=['text'])
 @bot.edited_message_handler(content_types=['text'])
 def send_text(message):
@@ -40,10 +47,13 @@ def send_text(message):
         text_message = 'Тогда прощай.\nЖду в следующий раз'
         bot.send_message(message.chat.id, text_message, reply_markup=del_keyboard)
     elif message.text == GO:
-        for match in list_matches:
-            bot.send_message(message.chat.id, match)
+        bot.send_message(message.chat.id, next(next_match))
     elif re.match(pattern_result_match, message.text):
         bot.send_message(message.chat.id, 'OK')
+        try:
+            bot.send_message(message.chat.id, next(next_match))
+        except StopIteration:
+            bot.send_message(message.chat.id, 'Спасибо! Мы закончили. Удачи...')
     else:
         text_message = ERROR
         bot.send_message(message.chat.id, text_message, reply_markup=del_keyboard)
