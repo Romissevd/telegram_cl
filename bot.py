@@ -16,6 +16,7 @@ bad_result_match = 'Таких результатов не бывает!\nПри
 
 pattern_result_match = re.compile('^\d{1}-\d{1}$')
 pattern_bad_result_match = re.compile('^\d{2}-\d{1}$|^\d{2}-\d{2}$|^\d{1}-\d{2}$')
+
 bot = telebot.TeleBot(TOKEN)
 
 keyboard_yes_or_no = telebot.types.ReplyKeyboardMarkup(True, True, True)
@@ -47,7 +48,7 @@ def helper(message):
 
 
 @bot.message_handler(commands=['start'])
-def start_message(message):
+def start(message):
     if message.chat.id not in users_data.keys():
         list_matches = matches.loading_matches_from_db()
         users_data[message.chat.id] = {
@@ -56,10 +57,10 @@ def start_message(message):
             'result': {},
         }
 
-    text_message = 'Привет, {}!\n' \
-                   'Я бот-чемпион, который принимает ставки на матчи Лиги Чемпионов по футболу.\n' \
-                   'Хочешь сделать прогноз на матч?'.format(username_definition(message))
-    bot.send_message(message.chat.id, text_message, reply_markup=keyboard_yes_or_no)
+    start_message = 'Привет, {}!\n' \
+                    'Я бот-чемпион, который принимает ставки на матчи Лиги Чемпионов по футболу.\n' \
+                    'Хочешь сделать прогноз на матч?'.format(username_definition(message))
+    bot.send_message(message.chat.id, start_message, reply_markup=keyboard_yes_or_no)
 
 
 def generator_matches(list_matches):
@@ -116,7 +117,7 @@ def send_text(message):
             save_current_match(message, match)
             bot.send_message(message.chat.id, match)
         except StopIteration:
-            bot.send_message(message.chat.id, 'Спасибо! Мы закончили. Удачи...')
+            bot.send_message(message.chat.id, 'Спасибо! Твои результаты сохранены. Удачи...')
     elif re.match(pattern_bad_result_match, message.text):
         bot.send_message(message.chat.id, bad_result_match, reply_to_message_id=message.message_id)
         bot.send_message(message.chat.id, download_match(message))
