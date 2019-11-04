@@ -5,7 +5,7 @@ import telebot
 import matches
 from config import TOKEN
 
-chat_id = {}
+users_data = {}
 YES = 'Да'
 NO = 'Нет'
 GO = 'Поехали'
@@ -38,14 +38,22 @@ def username_definition(message):
     return username
 
 
-@bot.message_handler(commands=['start', 'help'])
+@bot.message_handler(commands=['help'])
+def helper(message):
+    help_text = '/start - начало работы с ботом;\n' \
+                '/help - подсказки;\n' \
+                '/result - просмотреть мои ставки;'
+    bot.send_message(message.chat.id, help_text)
+
+
+@bot.message_handler(commands=['start'])
 def start_message(message):
-    if message.chat.id not in chat_id.keys():
-        list_matches = matches.lst_match()
-        next_match = generator_matches(list_matches)
-        chat_id[message.chat.id] = {
-            'next_match': next_match,
+    if message.chat.id not in users_data.keys():
+        list_matches = matches.loading_matches_from_db()
+        users_data[message.chat.id] = {
+            'next_match': generator_matches(list_matches),
             'list_matches': list_matches,
+            'result': {},
         }
 
     text_message = 'Привет, {}!\n' \
@@ -66,30 +74,45 @@ def text_list_matches(list_matches):
 
 
 def save_current_match(message, match):
-    chat_id[message.chat.id]['current_match'] = match # через get
+    users_data[message.chat.id]['current_match'] = match
 
 
 def download_match(message):
-    return chat_id[message.chat.id]['current_match'] # через get
+    return users_data[message.chat.id].get('current_match')
+
+
+@bot.message_handler(commands=['result'])
+def result(message):
+    user = users_data.get(message.chat.id)
+    if not user:
+        bot.send_message(message.chat.id, 'Я тебя не знаю!')
+    elif not user.get('result'):
+        bot.send_message(message.chat.id, 'Еще нет результатов')
+    else:
+        text_user_result = ''
+        for match, res in user.get('result').items():
+            text_user_result += match + ' => ' + res + '\n'
+        bot.send_message(message.chat.id, text_user_result)
 
 
 @bot.message_handler(content_types=['text'])
 # @bot.edited_message_handler(content_types=['text'])
 def send_text(message):
     if message.text == YES:
-        text_message = text_list_matches(chat_id[message.chat.id]['list_matches'])
+        text_message = text_list_matches(users_data[message.chat.id]['list_matches'])
         bot.send_message(message.chat.id, text_message, reply_markup=del_keyboard)
         bot.send_message(message.chat.id, text_go, reply_markup=keyboard_go)
     elif message.text == NO:
         bot.send_message(message.chat.id, text_bye, reply_markup=del_keyboard)
     elif message.text == GO:
-        match = next(chat_id[message.chat.id]['next_match'])
+        match = next(users_data[message.chat.id]['next_match'])
         save_current_match(message, match)
         bot.send_message(message.chat.id, match, reply_markup=del_keyboard)
     elif re.match(pattern_result_match, message.text):
+        users_data[message.chat.id]['result'][download_match(message)] = message.text
         bot.send_message(message.chat.id, 'Результат принят!')
         try:
-            match = next(chat_id[message.chat.id]['next_match'])
+            match = next(users_data[message.chat.id]['next_match'])
             save_current_match(message, match)
             bot.send_message(message.chat.id, match)
         except StopIteration:

@@ -1,6 +1,6 @@
 from db import FCDataBase
 
-def lst_match():
+def loading_matches_from_db():
     list_matches = []
     date_first_match = None
     matches_in_db = FCDataBase()
