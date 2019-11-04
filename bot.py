@@ -43,7 +43,8 @@ def username_definition(message):
 def helper(message):
     help_text = '/start - начало работы с ботом;\n' \
                 '/help - подсказки;\n' \
-                '/result - просмотреть мои ставки;'
+                '/result - просмотреть мои ставки;\n' \
+                '/change - изменить результаты матчей;'
     bot.send_message(message.chat.id, help_text)
 
 
@@ -94,6 +95,20 @@ def result(message):
         for match, res in user.get('result').items():
             text_user_result += match + ' => ' + res + '\n'
         bot.send_message(message.chat.id, text_user_result)
+
+
+@bot.message_handler(commands=['change'])
+def change_result(message):
+    user = users_data.get(message.chat.id)
+    if not user:
+        bot.send_message(message.chat.id, 'Я тебя не знаю!')
+    elif not user.get('result'):
+        bot.send_message(message.chat.id, 'Еще нет результатов')
+    else:
+        change_match = generator_matches(user.get('result').keys())
+        match = next(change_match)
+        change_text = match + ' => ' + user.get('result')[match]
+        bot.send_message(message.chat.id, change_text) #
 
 
 @bot.message_handler(content_types=['text'])
