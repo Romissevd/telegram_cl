@@ -9,6 +9,8 @@ users_data = {}
 YES = 'Да'
 NO = 'Нет'
 GO = 'Поехали'
+CHANGE = 'Изменить'
+NEXT = 'Следующий'
 ERROR = 'Error.\nИзвини, я тебя не понимаю.'
 text_go = 'Начнем?'
 text_bye = 'Тогда прощай.\nЖду в следующий раз'
@@ -26,6 +28,11 @@ del_keyboard = telebot.types.ReplyKeyboardRemove()
 
 keyboard_go = telebot.types.ReplyKeyboardMarkup(True, True)
 keyboard_go.row(GO)
+
+button_change = telebot.types.InlineKeyboardButton(CHANGE, callback_data=CHANGE)
+button_next = telebot.types.InlineKeyboardButton(NEXT, callback_data=NEXT)
+keyboard_change = telebot.types.InlineKeyboardMarkup()
+keyboard_change.add(button_change, button_next)
 
 
 def username_definition(message):
@@ -69,7 +76,7 @@ def generator_matches(list_matches):
 
 
 def text_list_matches(list_matches):
-    text = 'OK!\nСледующий тур - %s\nВ этом туре будут играть между собой такие пары...\n'
+    text = 'OK!\nТы можешь сделать ставки на такие игровые пары:\n'
     for match in list_matches:
         text += match + '\n'
     return text
@@ -108,7 +115,15 @@ def change_result(message):
         change_match = generator_matches(user.get('result').keys())
         match = next(change_match)
         change_text = match + ' => ' + user.get('result')[match]
-        bot.send_message(message.chat.id, change_text) #
+        bot.send_message(message.chat.id, change_text, reply_markup=keyboard_change)
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call):
+    if call.data == CHANGE:
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='Меняем')
+    elif call.data == NEXT:
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='Следующий')
 
 
 @bot.message_handler(content_types=['text'])
