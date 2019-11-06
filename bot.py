@@ -139,7 +139,7 @@ def send_text(message):
         match = next(users_data[message.chat.id]['next_match'])
         save_current_match(message, match)
         bot.send_message(message.chat.id, match, reply_markup=del_keyboard)
-    elif re.match(pattern_result_match, message.text):
+    elif re.match(pattern_result_match, message.text) and download_match(message):
         users_data[message.chat.id]['result'][download_match(message)] = message.text
         bot.send_message(message.chat.id, 'Результат принят!')
         try:
@@ -148,7 +148,7 @@ def send_text(message):
             bot.send_message(message.chat.id, match)
         except StopIteration:
             bot.send_message(message.chat.id, 'Спасибо! Твои результаты сохранены. Удачи...')
-    elif re.match(pattern_bad_result_match, message.text):
+    elif re.match(pattern_bad_result_match, message.text) and download_match(message):
         bot.send_message(message.chat.id, bad_result_match, reply_to_message_id=message.message_id)
         bot.send_message(message.chat.id, download_match(message))
     else:
