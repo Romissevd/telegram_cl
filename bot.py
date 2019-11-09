@@ -63,6 +63,7 @@ def start(message):
             'next_match': generator_matches(list_matches),
             'list_matches': list_matches,
             'result': {},
+            'change': None,
         }
 
     start_message = 'Привет, {}!\n' \
@@ -112,18 +113,35 @@ def change_result(message):
     elif not user.get('result'):
         bot.send_message(message.chat.id, 'Еще нет результатов')
     else:
-        change_match = generator_matches(user.get('result').keys())
-        match = next(change_match)
-        change_text = match + ' => ' + user.get('result')[match]
-        bot.send_message(message.chat.id, change_text, reply_markup=keyboard_change)
+        if users_data.get('change_match') is None:
+            users_data['change_match'] = generator_matches(user.get('result').keys())
+        try:
+            match = next(users_data['change_match'])
+            change_text = match + ' => ' + user.get('result')[match]
+            bot.send_message(message.chat.id, change_text, reply_markup=keyboard_change)
+        except StopIteration:
+            users_data['change_match'] = None
+            bot.send_message(message.chat.id, 'Спасибо! Твои результаты изменены. Удачи...')
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
     if call.data == CHANGE:
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='Меняем')
+        change_match = call.message.text.split(' => ')[0]
+        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=call.message.text + '\nВведите новый результат')
+        bot.register_next_step_handler_by_chat_id(msg.chat.id, print_text, change_match) # call.message.json.text
     elif call.data == NEXT:
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='Следующий')
+        try:
+            change_result(call.message)
+        except:
+            change_result(call)
+
+
+def print_text(message, change_match):
+    users_data[message.chat.id]['result'][change_match] = message.text
+    message.data = NEXT
+    callback_inline(message)
+
 
 
 @bot.message_handler(content_types=['text'])
@@ -140,6 +158,7 @@ def send_text(message):
         save_current_match(message, match)
         bot.send_message(message.chat.id, match, reply_markup=del_keyboard)
     elif re.match(pattern_result_match, message.text) and download_match(message):
+        users_data['change_match'] = None
         users_data[message.chat.id]['result'][download_match(message)] = message.text
         bot.send_message(message.chat.id, 'Результат принят!')
         try:
