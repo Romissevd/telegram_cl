@@ -1,4 +1,4 @@
-from db import FCDataBase
+from api_matches import FCDataBase
 
 def loading_matches_from_db():
     list_matches = []
