@@ -4,6 +4,7 @@ import telebot
 
 import matches
 from config import TOKEN
+from db_data_users import MongoDB
 
 users_data = {}
 YES = 'Да'
@@ -15,6 +16,8 @@ ERROR = 'Error.\nИзвини, я тебя не понимаю.'
 text_go = 'Начнем?'
 text_bye = 'Тогда прощай.\nЖду в следующий раз'
 bad_result_match = 'Таких результатов не бывает!\nПринимаются значения вида X-X'
+
+db = MongoDB()
 
 pattern_result_match = re.compile('^\d{1}-\d{1}$')
 pattern_bad_result_match = re.compile('^\d{2}-\d{1}$|^\d{2}-\d{2}$|^\d{1}-\d{2}$')
@@ -65,6 +68,8 @@ def start(message):
             'result': {},
             'change': None,
         }
+        db.add({'user_id': str(message.chat.id)})
+        print(db)
 
     start_message = 'Привет, {}!\n' \
                     'Я бот-чемпион, который принимает ставки на матчи Лиги Чемпионов по футболу.\n' \
@@ -143,7 +148,6 @@ def print_text(message, change_match):
     callback_inline(message)
 
 
-
 @bot.message_handler(content_types=['text'])
 # @bot.edited_message_handler(content_types=['text'])
 def send_text(message):
@@ -180,3 +184,5 @@ def send_text(message):
 
 
 bot.polling()
+
+
