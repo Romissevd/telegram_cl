@@ -38,15 +38,37 @@ keyboard_change = telebot.types.InlineKeyboardMarkup()
 keyboard_change.add(button_change, button_next)
 
 
-def username_definition(message):
-    username = 'Неизвестный'
-    if message.chat.username:
-        username = message.chat.username
-    elif message.chat.first_name:
-        username = message.chat.first_name
-        if message.chat.last_name:
-            username += ' ' + message.chat.last_name
-    return username
+def set_info_about_user(message):
+    username = message.chat.username
+    if username == 'null':
+        username = None
+
+    first_name = message.chat.first_name
+    if first_name == 'null':
+        first_name = None
+
+    last_name = message.chat.last_name
+    if last_name == 'null':
+        last_name = None
+
+    return {
+        'username': username,
+        'first_name': first_name,
+        'last_name': last_name,
+    }
+
+
+def get_username(user):
+    username = user.get('username', None)
+    if username:
+        return username
+    first_name = user.get('first_name', None)
+    if first_name:
+        last_name = user.get('last_name', None)
+        if last_name:
+            return first_name + ' ' + last_name
+        return first_name
+    return 'Гость'
 
 
 @bot.message_handler(commands=['help'])
@@ -68,12 +90,15 @@ def start(message):
             'result': {},
             'change': None,
         }
-        db.add({'user_id': str(message.chat.id)})
-        print(db)
+    info_about_user = set_info_about_user(message)
+    user = db.get_user_info(str(message.chat.id))
+    if not user:
+        db.set_user_info(str(message.chat.id), info_about_user)
+        user = db.get_user_info(str(message.chat.id))
 
     start_message = 'Привет, {}!\n' \
                     'Я бот-чемпион, который принимает ставки на матчи Лиги Чемпионов по футболу.\n' \
-                    'Хочешь сделать прогноз на матч?'.format(username_definition(message))
+                    'Хочешь сделать прогноз на матч?'.format(get_username(user))
     bot.send_message(message.chat.id, start_message, reply_markup=keyboard_yes_or_no)
 
 

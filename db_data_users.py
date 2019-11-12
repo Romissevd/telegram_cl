@@ -15,10 +15,21 @@ class MongoDB():
         self.db = self.client[MongoDB.db_name]
         self.collection = self.db[collection]
 
-    def add(self, info):
-        self.collection.insert_one(info)
+    def set_user_info(self, id_, user_info):
+        self.collection.insert_one({'id_telegram': id_, 'user': user_info})
+
+    def get_user_info(self, id_):
+        user = self.collection.find_one({'id_telegram': id_})
+        if not user:
+            return None
+        return user['user']
 
     def __str__(self):
         for val in self.collection.find():
             print(val)
+        print('=='*40)
         return str(self.collection.find_one())
+
+
+if __name__ == '__main__':
+    db = MongoDB()
