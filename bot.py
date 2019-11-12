@@ -1,3 +1,4 @@
+import logging
 import re
 
 import telebot
@@ -18,6 +19,8 @@ text_bye = 'Тогда прощай.\nЖду в следующий раз'
 bad_result_match = 'Таких результатов не бывает!\nПринимаются значения вида X-X'
 
 db = MongoDB()
+
+logging.basicConfig(filename="myLog.log", level=logging.INFO)
 
 pattern_result_match = re.compile('^\d{1}-\d{1}$')
 pattern_bad_result_match = re.compile('^\d{2}-\d{1}$|^\d{2}-\d{2}$|^\d{1}-\d{2}$')
@@ -95,6 +98,7 @@ def start(message):
     if not user:
         db.set_user_info(str(message.chat.id), info_about_user)
         user = db.get_user_info(str(message.chat.id))
+        logging.info('Добавлен новый пользователь - {}'.format(get_username(user)))
 
     start_message = 'Привет, {}!\n' \
                     'Я бот-чемпион, который принимает ставки на матчи Лиги Чемпионов по футболу.\n' \
