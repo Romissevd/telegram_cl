@@ -30,6 +30,15 @@ class MongoDB():
             return None
         return user['user']
 
+    def set_matches(self):
+        pass
+
+    def get_matches(self):
+        pass
+
+    def change_result_matches(self):
+        pass
+
     def __str__(self):
         for val in self.collection.find():
             print(val)
