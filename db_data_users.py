@@ -1,5 +1,7 @@
 __author__ = 'Roman Evdokimov'
 
+import datetime
+
 import pymongo
 
 
@@ -16,7 +18,11 @@ class MongoDB():
         self.collection = self.db[collection]
 
     def set_user_info(self, id_, user_info):
-        self.collection.insert_one({'id_telegram': id_, 'user': user_info})
+        self.collection.insert_one({
+            'id_telegram': id_,
+            'user': user_info,
+            'date_registration': datetime.datetime.now(),
+        })
 
     def get_user_info(self, id_):
         user = self.collection.find_one({'id_telegram': id_})
