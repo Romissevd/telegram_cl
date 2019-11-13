@@ -20,7 +20,7 @@ bad_result_match = 'Таких результатов не бывает!\nПри
 
 db = MongoDB()
 
-logging.basicConfig(filename="myLog.log", level=logging.INFO)
+logging.basicConfig(filename='myLog.log', filemode='w', level=logging.INFO)
 
 pattern_result_match = re.compile('^\d{1}-\d{1}$')
 pattern_bad_result_match = re.compile('^\d{2}-\d{1}$|^\d{2}-\d{2}$|^\d{1}-\d{2}$')
@@ -74,6 +74,12 @@ def get_username(user):
     return 'Гость'
 
 
+def check_user_info(telegram_user_info, db_user_info):
+    return telegram_user_info['username'] != db_user_info['username'] or \
+        telegram_user_info['first_name'] != db_user_info['first_name'] or \
+        telegram_user_info['last_name'] != db_user_info['last_name']
+
+
 @bot.message_handler(commands=['help'])
 def helper(message):
     help_text = '/start - начало работы с ботом;\n' \
@@ -99,6 +105,11 @@ def start(message):
         db.set_user_info(str(message.chat.id), info_about_user)
         user = db.get_user_info(str(message.chat.id))
         logging.info('Добавлен новый пользователь - {}'.format(get_username(user)))
+
+    elif check_user_info(info_about_user, user):
+        db.update_user_info(str(message.chat.id), info_about_user)
+        logging.info('Пользователь {old_username}, изменил свои данные.'.format(old_username=get_username(user)))
+        user = db.get_user_info(str(message.chat.id))
 
     start_message = 'Привет, {}!\n' \
                     'Я бот-чемпион, который принимает ставки на матчи Лиги Чемпионов по футболу.\n' \

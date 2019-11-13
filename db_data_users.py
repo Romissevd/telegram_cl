@@ -30,6 +30,9 @@ class MongoDB():
             return None
         return user['user']
 
+    def update_user_info(self, id_, user_info):
+        self.collection.update_one({'id_telegram': id_}, {'$set': {'user': user_info}})
+
     def set_matches(self):
         pass
 
