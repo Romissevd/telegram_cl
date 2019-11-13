@@ -33,11 +33,14 @@ class MongoDB():
     def update_user_info(self, id_, user_info):
         self.collection.update_one({'id_telegram': id_}, {'$set': {'user': user_info}})
 
-    def set_matches(self):
-        pass
+    def set_matches(self, id_, list_matches):
+        for match in list_matches:
+            self.collection.update_one({'id_telegram': id_}, {'$push': {'matches': {match: 'X-X'}}})
 
-    def get_matches(self):
-        pass
+    def get_matches(self, id_):
+        user = self.collection.find_one({'id_telegram': id_})
+
+        return user.get('matches', None)
 
     def change_result_matches(self):
         pass

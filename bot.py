@@ -195,6 +195,10 @@ def send_text(message):
         text_message = text_list_matches(users_data[message.chat.id]['list_matches'])
         bot.send_message(message.chat.id, text_message, reply_markup=del_keyboard)
         bot.send_message(message.chat.id, text_go, reply_markup=keyboard_go)
+
+        if not db.get_matches(str(message.chat.id)):
+            db.set_matches(str(message.chat.id), matches.loading_matches_from_db())
+
     elif message.text == NO:
         bot.send_message(message.chat.id, text_bye, reply_markup=del_keyboard)
     elif message.text == GO:
