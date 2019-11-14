@@ -1,5 +1,6 @@
 from api_matches import FCDataBase
 
+
 def loading_matches_from_db():
     list_matches = []
     date_first_match = None

@@ -97,7 +97,7 @@ def start(message):
             'next_match': generator_matches(list_matches),
             'list_matches': list_matches,
             'result': {},
-            'change': None,
+            'change_match': None,
         }
     info_about_user = set_info_about_user(message)
     user = db.get_user_info(str(message.chat.id))
@@ -121,11 +121,11 @@ def generator_matches(list_matches):
     yield from list_matches
 
 
-def text_list_matches(list_matches):
-    text = 'OK!\nТы можешь сделать ставки на такие игровые пары:\n'
-    for match in list_matches:
-        text += match + '\n'
-    return text
+# def text_list_matches(list_matches):
+#     text = 'OK!\nТы можешь сделать ставки на такие игровые пары:\n'
+#     for match in list_matches:
+#         text += match + '\n'
+#     return text
 
 
 def save_current_match(message, match):
@@ -191,13 +191,18 @@ def print_text(message, change_match):
 @bot.message_handler(content_types=['text'])
 # @bot.edited_message_handler(content_types=['text'])
 def send_text(message):
+    user_id = str(message.chat.id)
     if message.text == YES:
-        text_message = text_list_matches(users_data[message.chat.id]['list_matches'])
-        bot.send_message(message.chat.id, text_message, reply_markup=del_keyboard)
-        bot.send_message(message.chat.id, text_go, reply_markup=keyboard_go)
-
-        if not db.get_matches(str(message.chat.id)):
-            db.set_matches(str(message.chat.id), matches.loading_matches_from_db())
+        # text_message = text_list_matches(users_data[message.chat.id]['list_matches'])
+        # bot.send_message(message.chat.id, text_message, reply_markup=del_keyboard)
+        # bot.send_message(message.chat.id, text_go, reply_markup=keyboard_go)
+        list_matches = db.get_matches(user_id)
+        if not list_matches:
+            db.set_matches(user_id, matches.loading_matches_from_db())
+        text_message = 'OK!\nТы можешь сделать ставки на такие игровые пары:\n'
+        text_message += db.get_text_list_matches(user_id)
+        bot.send_message(user_id, text_message, reply_markup=del_keyboard)
+        bot.send_message(user_id, text_go, reply_markup=keyboard_go)
 
     elif message.text == NO:
         bot.send_message(message.chat.id, text_bye, reply_markup=del_keyboard)
@@ -208,6 +213,7 @@ def send_text(message):
     elif re.match(pattern_result_match, message.text) and download_match(message):
         users_data['change_match'] = None
         users_data[message.chat.id]['result'][download_match(message)] = message.text
+        print(users_data)
         bot.send_message(message.chat.id, 'Результат принят!')
         try:
             match = next(users_data[message.chat.id]['next_match'])
