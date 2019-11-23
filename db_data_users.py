@@ -35,19 +35,27 @@ class MongoDB():
 
     def set_matches(self, id_, list_matches):
         for match in list_matches:
-            self.collection.update_one({'id_telegram': id_}, {'$push': {'matches': {match: ''}}})
+            self.collection.update_one({'id_telegram': id_}, {'$push': {'matches': {'match': match, 'result': ''}}})
 
     def get_matches(self, id_):
         user = self.collection.find_one({'id_telegram': id_})
         return user.get('matches', None)
 
-    def change_result_matches(self):
-        pass
+    def get_result_match(self, id_, match):
+        try:
+            find_match = self.collection.find_one({'id_telegram': id_, 'matches.match': match}, {'matches.$.result': 1})
+            result_match = find_match['matches'][0]['result']
+        except:
+            result_match = None
+        return result_match
+
+    def change_result_matches(self, id_, match, result):
+        self.collection.update_one({'id_telegram': id_, 'matches.match': match}, {'$set': {'matches.$.result': result}})
 
     def get_text_list_matches(self, id_):
         text = ''
-        for match in [list(x.keys())[0] for x in self.get_matches(id_)]:
-            text += match + '\n'
+        for match in self.get_matches(id_):
+            text += match['match'] + '\n'
         return text
 
     def __str__(self):

@@ -213,7 +213,7 @@ def send_text(message):
     elif re.match(pattern_result_match, message.text) and download_match(message):
         users_data['change_match'] = None
         users_data[message.chat.id]['result'][download_match(message)] = message.text
-        print(users_data)
+        db.change_result_matches(user_id, download_match(message), message.text)
         bot.send_message(message.chat.id, 'Результат принят!')
         try:
             match = next(users_data[message.chat.id]['next_match'])
