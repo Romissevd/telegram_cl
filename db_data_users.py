@@ -49,6 +49,13 @@ class MongoDB():
             result_match = None
         return result_match
 
+    def get_results_matches(self, id_):
+        list_results_matches = []
+        for match in self.collection.find_one({'id_telegram': id_})['matches']:
+            if match['result']:
+                list_results_matches.append(match)
+        return list_results_matches
+
     def change_result_matches(self, id_, match, result):
         self.collection.update_one({'id_telegram': id_, 'matches.match': match}, {'$set': {'matches.$.result': result}})
 

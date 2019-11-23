@@ -138,15 +138,16 @@ def download_match(message):
 
 @bot.message_handler(commands=['result'])
 def result(message):
+    results_matches = db.get_results_matches(str(message.chat.id))
     user = users_data.get(message.chat.id)
     if not user:
         bot.send_message(message.chat.id, 'Я тебя не знаю!')
-    elif not user.get('result'):
+    elif not results_matches:
         bot.send_message(message.chat.id, 'Еще нет результатов')
     else:
         text_user_result = ''
-        for match, res in user.get('result').items():
-            text_user_result += match + ' => ' + res + '\n'
+        for match in results_matches:
+            text_user_result += match['match'] + ' => ' + match['result'] + '\n'
         bot.send_message(message.chat.id, text_user_result)
 
 
@@ -212,7 +213,7 @@ def send_text(message):
         bot.send_message(message.chat.id, match, reply_markup=del_keyboard)
     elif re.match(pattern_result_match, message.text) and download_match(message):
         users_data['change_match'] = None
-        users_data[message.chat.id]['result'][download_match(message)] = message.text
+        # users_data[message.chat.id]['result'][download_match(message)] = message.text
         db.change_result_matches(user_id, download_match(message), message.text)
         bot.send_message(message.chat.id, 'Результат принят!')
         try:
