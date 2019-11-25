@@ -35,11 +35,21 @@ class MongoDB():
 
     def set_matches(self, id_, list_matches):
         for match in list_matches:
-            self.collection.update_one({'id_telegram': id_}, {'$push': {'matches': {'match': match, 'result': ''}}})
+            self.collection.update_one({'id_telegram': id_}, {'$push': {'matches': {'date': match['date'],
+                                                                                    'match': match['match'],
+                                                                                    'result': ''}}})
 
     def get_matches(self, id_):
         user = self.collection.find_one({'id_telegram': id_})
-        return user.get('matches', None)
+        list_matches = []
+        matches = user.get('matches', None)
+        if matches:
+            for match in matches:
+                if match['date'] > datetime.datetime.now():
+                    list_matches.append(match)
+            return list_matches
+        else:
+            return None
 
     def get_result_match(self, id_, match):
         try:

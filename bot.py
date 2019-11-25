@@ -94,7 +94,7 @@ def start(message):
     if message.chat.id not in users_data.keys():
         list_matches = matches.loading_matches_from_db()
         users_data[message.chat.id] = {
-            'next_match': generator_matches(list_matches),
+            'next_match': generator_matches([match['match'] for match in list_matches]),
             'list_matches': list_matches,
             'result': {},
             'change_match': None,

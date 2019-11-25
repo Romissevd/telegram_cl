@@ -13,6 +13,7 @@ def loading_matches_from_db():
 
         if not date_first_match:
             date_first_match = match[2].date()
+
         else:
             delta = match[2].date() - date_first_match
 
@@ -20,7 +21,7 @@ def loading_matches_from_db():
                 break
 
         match_string = text_match(match[:2])
-        list_matches.append(match_string)
+        list_matches.append({'match': match_string, 'date': match[2]})
     matches_in_db.close()
     return list_matches
 
