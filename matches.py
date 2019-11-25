@@ -11,7 +11,7 @@ def loading_matches_from_db():
 
     for match in matches_in_db.cursor:
 
-        club_name_in_db = FCDataBase()
+
 
         if not date_first_match:
             date_first_match = match[2].date()
@@ -21,24 +21,30 @@ def loading_matches_from_db():
             if delta.days > 2:
                 break
 
-        match_string = ''
-        blank = False
-
-        for team_id in match[:2]:
-
-            club_name_in_db.query("""SELECT club_name FROM football_dictionaryclubname WHERE id = 
-                          (SELECT fc_id_name_dictionary_id FROM football_footballclub WHERE id = %s);""", (team_id,))
-
-            for club_name in club_name_in_db.cursor:
-                match_string += club_name[0]
-
-                if not blank:
-                    match_string += ' - '
-                    blank = True
-                else:
-                    blank = False
-
+        match_string = load_club_name(match[:2])
         list_matches.append(match_string)
-        club_name_in_db.close()
     matches_in_db.close()
     return list_matches
+
+
+def load_club_name(match):
+
+    match_string = ''
+    blank = False
+    club_name_in_db = FCDataBase()
+
+    for team_id in match:
+
+        club_name_in_db.query("""SELECT club_name FROM football_dictionaryclubname WHERE id = 
+                      (SELECT fc_id_name_dictionary_id FROM football_footballclub WHERE id = %s);""", (team_id,))
+
+        for club_name in club_name_in_db.cursor:
+            match_string += club_name[0]
+
+            if not blank:
+                match_string += ' - '
+                blank = True
+            else:
+                blank = False
+    club_name_in_db.close()
+    return match_string
