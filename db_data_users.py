@@ -4,6 +4,8 @@ import datetime
 
 import pymongo
 
+from time_delta_match import delta_time
+
 
 class MongoDB():
 
@@ -45,7 +47,7 @@ class MongoDB():
         matches = user.get('matches', None)
         if matches:
             for match in matches:
-                if match['date'] > datetime.datetime.now():
+                if delta_time(match['date']):
                     list_matches.append(match)
             return list_matches
         else:
