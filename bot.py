@@ -156,14 +156,14 @@ def change_result(message):
     user = users_data.get(message.chat.id)
     if not user:
         bot.send_message(message.chat.id, 'Я тебя не знаю!')
-    elif not user.get('result'):
-        bot.send_message(message.chat.id, 'Еще нет результатов')
+    elif not db.get_change_matches(str(message.chat.id)):
+        bot.send_message(message.chat.id, 'Еще нет результатов для изменения')
     else:
         if users_data.get('change_match') is None:
-            users_data['change_match'] = generator_matches(user.get('result').keys())
+            users_data['change_match'] = generator_matches(db.get_change_matches(str(message.chat.id)))
         try:
             match = next(users_data['change_match'])
-            change_text = match + ' => ' + user.get('result')[match]
+            change_text = match['match'] + ' => ' + match['result']
             bot.send_message(message.chat.id, change_text, reply_markup=keyboard_change)
         except StopIteration:
             users_data['change_match'] = None
@@ -181,12 +181,19 @@ def callback_inline(call):
             change_result(call.message)
         except:
             change_result(call)
+    elif call.data == bad_result_match:
+        pass
 
 
 def print_text(message, change_match):
-    users_data[message.chat.id]['result'][change_match] = message.text
-    message.data = NEXT
-    callback_inline(message)
+    # users_data[message.chat.id]['result'][change_match] = message.text
+    if re.match(pattern_result_match, message.text):
+        db.change_result_matches(str(message.chat.id), change_match, message.text)
+        message.data = NEXT
+        callback_inline(message)
+    else:
+        message.data = bad_result_match
+        callback_inline(message)
 
 
 @bot.message_handler(content_types=['text'])
