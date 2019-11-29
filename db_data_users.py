@@ -8,7 +8,6 @@ from time_delta_match import delta_time
 
 
 class MongoDB():
-
     db_name = 'results'
     collection_name = 'bets'
     host = 'localhost'
@@ -91,7 +90,7 @@ class MongoDB():
     def __str__(self):
         for val in self.collection.find():
             print(val)
-        print('=='*40)
+        print('==' * 40)
         return str(self.collection.find_one())
 
 

@@ -76,8 +76,8 @@ def get_username(user):
 
 def check_user_info(telegram_user_info, db_user_info):
     return telegram_user_info['username'] != db_user_info['username'] or \
-        telegram_user_info['first_name'] != db_user_info['first_name'] or \
-        telegram_user_info['last_name'] != db_user_info['last_name']
+           telegram_user_info['first_name'] != db_user_info['first_name'] or \
+           telegram_user_info['last_name'] != db_user_info['last_name']
 
 
 @bot.message_handler(commands=['help'])
@@ -91,29 +91,30 @@ def helper(message):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    if message.chat.id not in users_data.keys():
-        # list_matches = matches.loading_matches_from_db()
-        list_matches = db.get_matches(str(message.chat.id))
-        users_data[message.chat.id] = {
+    user_id = message.chat.id
+    str_user_id = str(user_id)
+    if user_id not in users_data.keys():
+        list_matches = db.get_matches(str_user_id)
+        users_data[user_id] = {
             'next_match': generator_matches([match['match'] for match in list_matches]),
             'change_match': None,
         }
     info_about_user = set_info_about_user(message)
-    user = db.get_user_info(str(message.chat.id))
+    user = db.get_user_info(str_user_id)
     if not user:
-        db.set_user_info(str(message.chat.id), info_about_user)
-        user = db.get_user_info(str(message.chat.id))
+        db.set_user_info(str_user_id, info_about_user)
+        user = db.get_user_info(str_user_id)
         logging.info('Добавлен новый пользователь - {}'.format(get_username(user)))
 
     elif check_user_info(info_about_user, user):
-        db.update_user_info(str(message.chat.id), info_about_user)
+        db.update_user_info(str_user_id, info_about_user)
         logging.info('Пользователь {old_username}, изменил свои данные.'.format(old_username=get_username(user)))
-        user = db.get_user_info(str(message.chat.id))
+        user = db.get_user_info(str_user_id)
 
     start_message = 'Привет, {}!\n' \
                     'Я бот-чемпион, который принимает ставки на матчи Лиги Чемпионов по футболу.\n' \
                     'Хочешь сделать прогноз на матч?'.format(get_username(user))
-    bot.send_message(message.chat.id, start_message, reply_markup=keyboard_yes_or_no)
+    bot.send_message(user_id, start_message, reply_markup=keyboard_yes_or_no)
 
 
 def generator_matches(list_matches):
@@ -168,7 +169,7 @@ def callback_inline(call):
         change_match = call.message.text.split(' => ')[0]
         msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                     text=call.message.text + '\nВведите новый результат')
-        bot.register_next_step_handler_by_chat_id(msg.chat.id, print_text, change_match) # call.message.json.text
+        bot.register_next_step_handler_by_chat_id(msg.chat.id, print_text, change_match)  # call.message.json.text
     elif call.data == NEXT:
         try:
             change_result(call.message)
@@ -209,33 +210,34 @@ def send_text(message):
             bot.send_message(user_id, text_go, reply_markup=keyboard_go)
 
     elif message.text == NO:
-        bot.send_message(message.chat.id, text_bye, reply_markup=del_keyboard)
+        bot.send_message(user_id, text_bye, reply_markup=del_keyboard)
     elif message.text == GO:
         match = next(users_data[message.chat.id]['next_match'])
         save_current_match(message, match)
-        bot.send_message(message.chat.id, match, reply_markup=del_keyboard)
+        bot.send_message(user_id, match, reply_markup=del_keyboard)
     elif re.match(pattern_result_match, message.text) and download_match(message):
-        users_data['change_match'] = None
+        users_data[message.chat.id]['change_match'] = None
         db.change_result_matches(user_id, download_match(message), message.text)
-        bot.send_message(message.chat.id, 'Результат принят!')
+        bot.send_message(user_id, 'Результат принят!')
         try:
             match = next(users_data[message.chat.id]['next_match'])
             save_current_match(message, match)
-            bot.send_message(message.chat.id, match)
+            bot.send_message(user_id, match)
         except StopIteration:
-            bot.send_message(message.chat.id, 'Спасибо! Твои результаты сохранены. '
-                                              'Для просмотра результатов введи /result, для изменения - /change'
-                                              ' Удачи...')
+            bot.send_message(user_id, 'Спасибо! Твои результаты сохранены. '
+                                      'Для просмотра результатов введи /result, для изменения - /change'
+                                      ' Удачи...')
     elif re.match(pattern_bad_result_match, message.text) and download_match(message):
-        bot.send_message(message.chat.id, bad_result_match, reply_to_message_id=message.message_id)
-        bot.send_message(message.chat.id, download_match(message))
+        bot.send_message(user_id, bad_result_match, reply_to_message_id=message.message_id)
+        bot.send_message(user_id, download_match(message))
     else:
         text_message = ERROR
         if download_match(message):
-            bot.send_message(message.chat.id, bad_result_match, reply_to_message_id=message.message_id)
-            bot.send_message(message.chat.id, download_match(message))
+            bot.send_message(user_id, bad_result_match, reply_to_message_id=message.message_id)
+            bot.send_message(user_id, download_match(message))
         else:
-            bot.send_message(message.chat.id, text_message, reply_markup=del_keyboard)
+            bot.send_message(user_id, text_message, reply_markup=del_keyboard)
+            helper(message)
 
 
 bot.polling()
