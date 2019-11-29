@@ -96,8 +96,6 @@ def start(message):
         list_matches = db.get_matches(str(message.chat.id))
         users_data[message.chat.id] = {
             'next_match': generator_matches([match['match'] for match in list_matches]),
-            # 'list_matches': list_matches,
-            # 'result': {},
             'change_match': None,
         }
     info_about_user = set_info_about_user(message)
@@ -120,13 +118,6 @@ def start(message):
 
 def generator_matches(list_matches):
     yield from list_matches
-
-
-# def text_list_matches(list_matches):
-#     text = 'OK!\nТы можешь сделать ставки на такие игровые пары:\n'
-#     for match in list_matches:
-#         text += match + '\n'
-#     return text
 
 
 def save_current_match(message, match):
@@ -175,7 +166,8 @@ def change_result(message):
 def callback_inline(call):
     if call.data == CHANGE:
         change_match = call.message.text.split(' => ')[0]
-        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=call.message.text + '\nВведите новый результат')
+        msg = bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                    text=call.message.text + '\nВведите новый результат')
         bot.register_next_step_handler_by_chat_id(msg.chat.id, print_text, change_match) # call.message.json.text
     elif call.data == NEXT:
         try:
@@ -183,7 +175,8 @@ def callback_inline(call):
         except:
             change_result(call)
     elif call.data == bad_result_match:
-        pass
+        bot.send_message(call.chat.id, bad_result_match, reply_to_message_id=call.message_id)
+        bot.register_next_step_handler_by_chat_id(call.chat.id, print_text, call.text)
 
 
 def print_text(message, change_match):
@@ -193,6 +186,7 @@ def print_text(message, change_match):
         callback_inline(message)
     else:
         message.data = bad_result_match
+        message.text = change_match
         callback_inline(message)
 
 
@@ -222,7 +216,6 @@ def send_text(message):
         bot.send_message(message.chat.id, match, reply_markup=del_keyboard)
     elif re.match(pattern_result_match, message.text) and download_match(message):
         users_data['change_match'] = None
-        # users_data[message.chat.id]['result'][download_match(message)] = message.text
         db.change_result_matches(user_id, download_match(message), message.text)
         bot.send_message(message.chat.id, 'Результат принят!')
         try:
@@ -230,7 +223,9 @@ def send_text(message):
             save_current_match(message, match)
             bot.send_message(message.chat.id, match)
         except StopIteration:
-            bot.send_message(message.chat.id, 'Спасибо! Твои результаты сохранены. Удачи...')
+            bot.send_message(message.chat.id, 'Спасибо! Твои результаты сохранены. '
+                                              'Для просмотра результатов введи /result, для изменения - /change'
+                                              ' Удачи...')
     elif re.match(pattern_bad_result_match, message.text) and download_match(message):
         bot.send_message(message.chat.id, bad_result_match, reply_to_message_id=message.message_id)
         bot.send_message(message.chat.id, download_match(message))
@@ -244,5 +239,3 @@ def send_text(message):
 
 
 bot.polling()
-
-
