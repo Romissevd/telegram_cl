@@ -47,7 +47,7 @@ class MongoDB():
         matches = user.get('matches', None)
         if matches:
             for match in matches:
-                if delta_time(match['date']):
+                if delta_time(match['date']) and match['result'] == '':
                     list_matches.append(match)
             return list_matches
         else:
@@ -64,7 +64,7 @@ class MongoDB():
     def get_results_matches(self, id_):
         list_results_matches = []
         for match in self.collection.find_one({'id_telegram': id_})['matches']:
-            if match['result']:
+            if match['result'] and delta_time(match['date']):
                 list_results_matches.append(match)
         return list_results_matches
 
@@ -73,11 +73,14 @@ class MongoDB():
 
     def get_change_matches(self, id_):
         change_matches = []
-        matches = self.get_matches(id_)
-        for match in matches:
-            if match['result']:
-                change_matches.append(match)
-        return change_matches
+        user = self.collection.find_one({'id_telegram': id_})
+        matches = user.get('matches', None)
+        if matches:
+            for match in matches:
+                if delta_time(match['date']) and match['result']:
+                    change_matches.append(match)
+            return change_matches
+        return None
 
     def get_text_list_matches(self, id_):
         text = ''

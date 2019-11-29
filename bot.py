@@ -92,11 +92,12 @@ def helper(message):
 @bot.message_handler(commands=['start'])
 def start(message):
     if message.chat.id not in users_data.keys():
-        list_matches = matches.loading_matches_from_db()
+        # list_matches = matches.loading_matches_from_db()
+        list_matches = db.get_matches(str(message.chat.id))
         users_data[message.chat.id] = {
             'next_match': generator_matches([match['match'] for match in list_matches]),
-            'list_matches': list_matches,
-            'result': {},
+            # 'list_matches': list_matches,
+            # 'result': {},
             'change_match': None,
         }
     info_about_user = set_info_about_user(message)
@@ -186,7 +187,6 @@ def callback_inline(call):
 
 
 def print_text(message, change_match):
-    # users_data[message.chat.id]['result'][change_match] = message.text
     if re.match(pattern_result_match, message.text):
         db.change_result_matches(str(message.chat.id), change_match, message.text)
         message.data = NEXT
@@ -201,16 +201,18 @@ def print_text(message, change_match):
 def send_text(message):
     user_id = str(message.chat.id)
     if message.text == YES:
-        # text_message = text_list_matches(users_data[message.chat.id]['list_matches'])
-        # bot.send_message(message.chat.id, text_message, reply_markup=del_keyboard)
-        # bot.send_message(message.chat.id, text_go, reply_markup=keyboard_go)
         list_matches = db.get_matches(user_id)
-        if not list_matches:
+        if not list_matches and not db.get_change_matches(user_id):
             db.set_matches(user_id, matches.loading_matches_from_db())
-        text_message = 'OK!\nТы можешь сделать ставки на такие игровые пары:\n'
-        text_message += db.get_text_list_matches(user_id)
-        bot.send_message(user_id, text_message, reply_markup=del_keyboard)
-        bot.send_message(user_id, text_go, reply_markup=keyboard_go)
+        if not list_matches:
+            text_message = 'Ты уже сделал ставки на все возомжные матчи, чтобы посмотреть рузультаты введи' \
+                           ' команду /result, чтобы изменить результат /change'
+            bot.send_message(user_id, text_message, reply_markup=del_keyboard)
+        else:
+            text_message = 'OK!\nТы можешь сделать ставки на такие игровые пары:\n'
+            text_message += db.get_text_list_matches(user_id)
+            bot.send_message(user_id, text_message, reply_markup=del_keyboard)
+            bot.send_message(user_id, text_go, reply_markup=keyboard_go)
 
     elif message.text == NO:
         bot.send_message(message.chat.id, text_bye, reply_markup=del_keyboard)
