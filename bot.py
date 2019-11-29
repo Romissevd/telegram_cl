@@ -151,14 +151,14 @@ def change_result(message):
     elif not db.get_change_matches(str(message.chat.id)):
         bot.send_message(message.chat.id, 'Еще нет результатов для изменения')
     else:
-        if users_data.get('change_match') is None:
-            users_data['change_match'] = generator_matches(db.get_change_matches(str(message.chat.id)))
+        if message.text == '/change':
+            user['change_match'] = generator_matches(db.get_change_matches(str(message.chat.id)))
         try:
-            match = next(users_data['change_match'])
+            match = next(user['change_match'])
             change_text = match['match'] + ' => ' + match['result']
             bot.send_message(message.chat.id, change_text, reply_markup=keyboard_change)
         except StopIteration:
-            users_data['change_match'] = None
+            user['change_match'] = None
             bot.send_message(message.chat.id, 'Спасибо! Твои результаты изменены. Удачи...')
 
 
@@ -172,7 +172,7 @@ def callback_inline(call):
     elif call.data == NEXT:
         try:
             change_result(call.message)
-        except:
+        except AttributeError:
             change_result(call)
     elif call.data == bad_result_match:
         bot.send_message(call.chat.id, bad_result_match, reply_to_message_id=call.message_id)
