@@ -87,6 +87,9 @@ class MongoDB():
             text += match['match'] + '\n'
         return text
 
+    def get_all_bets(self):
+        return self.collection.find()
+
     def __str__(self):
         for val in self.collection.find():
             print(val)
