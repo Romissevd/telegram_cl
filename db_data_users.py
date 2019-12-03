@@ -90,6 +90,18 @@ class MongoDB():
     def get_all_bets(self):
         return self.collection.find()
 
+    def get_all_matches_tour(self, id_):
+        user = self.collection.find_one({'id_telegram': id_})
+        list_matches = []
+        matches = user.get('matches', None)
+        if matches:
+            for match in matches:
+                if delta_time(match['date']):
+                    list_matches.append(match)
+            return list_matches
+        else:
+            return None
+
     def __str__(self):
         for val in self.collection.find():
             print(val)
