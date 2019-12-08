@@ -94,7 +94,7 @@ def start(message):
     user_id = message.chat.id
     str_user_id = str(user_id)
     if user_id not in users_data.keys():
-        list_matches = db.get_matches(str_user_id)
+        list_matches = matches.loading_matches_from_db()
         users_data[user_id] = {
             'next_match': generator_matches([match['match'] for match in list_matches]),
             'change_match': None,
@@ -131,11 +131,13 @@ def download_match(message):
 
 @bot.message_handler(commands=['result'])
 def result(message):
-    results_matches = db.get_results_matches(str(message.chat.id))
+    users_data[message.chat.id]['current_match'] = None
     user = users_data.get(message.chat.id)
     if not user:
         bot.send_message(message.chat.id, 'Я тебя не знаю!')
-    elif not results_matches:
+        return
+    results_matches = db.get_results_matches(str(message.chat.id))
+    if not results_matches:
         bot.send_message(message.chat.id, 'Еще нет результатов')
     else:
         text_user_result = ''
@@ -146,6 +148,7 @@ def result(message):
 
 @bot.message_handler(commands=['change'])
 def change_result(message):
+    users_data[message.chat.id]['current_match'] = None
     user = users_data.get(message.chat.id)
     if not user:
         bot.send_message(message.chat.id, 'Я тебя не знаю!')
@@ -161,6 +164,11 @@ def change_result(message):
         except StopIteration:
             user['change_match'] = None
             bot.send_message(message.chat.id, 'Спасибо! Твои результаты изменены. Удачи...')
+
+
+# @bot.message_handler(commands=['file'])
+# def write_file(message):
+#     excel_file.write_result_matches_in_excel()
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -199,6 +207,7 @@ def send_text(message):
         list_matches = db.get_matches(user_id)
         if not list_matches and not db.get_change_matches(user_id):
             db.set_matches(user_id, matches.loading_matches_from_db())
+            list_matches = db.get_matches(user_id)
         if not list_matches:
             text_message = 'Ты уже сделал ставки на все возомжные матчи, чтобы посмотреть рузультаты введи' \
                            ' команду /result, чтобы изменить результат /change'
@@ -206,27 +215,31 @@ def send_text(message):
         else:
             text_message = 'OK!\nТы можешь сделать ставки на такие игровые пары:\n'
             text_message += db.get_text_list_matches(user_id)
+            users_data[message.chat.id] = {
+                'next_match': generator_matches([match['match'] for match in list_matches]),
+                'change_match': None,
+            }
             bot.send_message(user_id, text_message, reply_markup=del_keyboard)
             bot.send_message(user_id, text_go, reply_markup=keyboard_go)
 
     elif message.text == NO:
         bot.send_message(user_id, text_bye, reply_markup=del_keyboard)
     elif message.text == GO:
-        match = next(users_data[message.chat.id]['next_match'])
-        save_current_match(message, match)
-        bot.send_message(user_id, match, reply_markup=del_keyboard)
-    elif re.match(pattern_result_match, message.text) and download_match(message):
         users_data[message.chat.id]['change_match'] = None
-        db.change_result_matches(user_id, download_match(message), message.text)
-        bot.send_message(user_id, 'Результат принят!')
         try:
             match = next(users_data[message.chat.id]['next_match'])
             save_current_match(message, match)
-            bot.send_message(user_id, match)
+            bot.send_message(user_id, match, reply_markup=del_keyboard)
         except StopIteration:
             bot.send_message(user_id, 'Спасибо! Твои результаты сохранены. '
                                       'Для просмотра результатов введи /result, для изменения - /change'
                                       ' Удачи...')
+    elif re.match(pattern_result_match, message.text) and download_match(message):
+        users_data[message.chat.id]['change_match'] = None
+        db.change_result_matches(user_id, download_match(message), message.text)
+        bot.send_message(user_id, 'Результат принят!')
+        message.text = GO
+        send_text(message)
     elif re.match(pattern_bad_result_match, message.text) and download_match(message):
         bot.send_message(user_id, bad_result_match, reply_to_message_id=message.message_id)
         bot.send_message(user_id, download_match(message))
